@@ -1,0 +1,6 @@
+# ninja log v6
+9	79	7534079508836818	CMakeFiles/STATIC.dir/src/base32.c.obj	cee6edd1de3d93d5
+14	80	7534079508881956	CMakeFiles/STATIC.dir/src/base64.c.obj	71a78724e09849d2
+5	88	7534079508791685	CMakeFiles/STATIC.dir/src/base16.c.obj	438aac56bbe8ab1f
+1	88	7534079508751671	CMakeFiles/STATIC.dir/CMakeFiles/3.29.6/CompilerIdC/CMakeCCompilerId.c.obj	af2927e809fde46d
+89	206	7534079509623797	libSTATIC.a	8dc54541513323e2
