@@ -1,3 +1,0 @@
-C:/Users/mk/Desktop/RFC4648/cmake-build-debug/CMakeFiles/STATIC.dir
-C:/Users/mk/Desktop/RFC4648/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/mk/Desktop/RFC4648/cmake-build-debug/CMakeFiles/rebuild_cache.dir
