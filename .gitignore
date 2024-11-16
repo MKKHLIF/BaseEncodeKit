@@ -1,0 +1,40 @@
+# Ignore build directory
+/build/
+/cmake-build-debug/
+/out/
+/cmake-build-debug-visual-studio/
+# Ignore all .o and .a files
+*.o
+*.a
+
+# Ignore all files that end in ~
+*~
+
+# Ignore all .swp files (Vim swap files)
+*.swp
+
+# Ignore core dumps
+core
+
+# Ignore CLion IDE files
+.idea/
+
+# Ignore Visual Studio Files
+.vs/
+
+# Ignore CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+CMakeLists.txt.user
+CMakeFiles
+CMakeScripts
+CMakeSettings.json
+Testing
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+CMakeUserPresets.json
