@@ -25,6 +25,16 @@
 #ifndef BASE64_H
 #define BASE64_H
 
+#define BASE64_TABLE "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+#define GET_BASE64_CHAR(index) (BASE64_TABLE[(index) & 0x3F])
+
+#define EXTRACT_6_BITS(buffer, bits, shift) \
+(((buffer) >> ((bits) - (shift))) & 0x3F)
+#include <stdint.h>
+
+
+char *base64_encode(const uint8_t *in, size_t in_sz);
 
 
 #endif //BASE64_H
