@@ -4,8 +4,6 @@ project(RFC4648 C)
 
 set(CMAKE_C_STANDARD 17)
 
-file(GLOB_RECURSE SRC_FILES "*.c")
-file(GLOB_RECURSE HEADER_FILES "*.h")
-
-
-add_library(${This} STATIC ${SRC_FILES} ${HEADER_FILES})
+add_subdirectory("src")
+#add_subdirectory("tests")
+add_subdirectory("examples")
