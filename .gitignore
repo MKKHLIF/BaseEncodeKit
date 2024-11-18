@@ -3,6 +3,7 @@
 /cmake-build-debug/
 /out/
 /cmake-build-debug-visual-studio/
+cmake-build-debug-mingw/
 # Ignore all .o and .a files
 *.o
 *.a
