@@ -7,5 +7,5 @@ set(CMAKE_C_STANDARD 17)
 enable_testing()
 
 add_subdirectory("src")
-#add_subdirectory("tests")
+add_subdirectory("tests")
 add_subdirectory("examples")
