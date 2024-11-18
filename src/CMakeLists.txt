@@ -1,4 +1,4 @@
-set(This BaseEncoderLib)
+set(This BaseCoderLib)
 
 file(GLOB_RECURSE SRC_FILES "*.c")
 file(GLOB_RECURSE HEADER_FILES "*.h")
