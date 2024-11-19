@@ -30,7 +30,7 @@
  * @brief Encodes binary data using Base64 encoding scheme
  *
  * @param out Output buffer to store the encoded string
- *            Must be at least base64_encode_len(in_sz) bytes
+ *            Must be at least base64_buff_sz(in_sz) bytes
  * @param out_sz Size of the output buffer
  * @param in Input binary data to encode
  *           Using uint8_t makes the binary nature explicit
