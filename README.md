@@ -1,4 +1,4 @@
-# RFC 4648 Base Encoding C Library
+# BaseEncodeKit - RFC4648
 
 This C library provides an implementation of the Base Encoding schemes defined in [RFC 4648](https://tools.ietf.org/html/rfc4648), which includes the Base64, Base32, and Base16 (Hex) encoding and decoding algorithms.
 
