@@ -13,7 +13,10 @@ int main(int argc, char *argv[]) {
     const ssize_t written = base64_encode(buffer, buf_sz,
                                           (const unsigned char *) test_data, test_len);
     if (written >= 0) {
+        printf("============================================\n");
+        printf("Written: %zd bytes\n", written);
         printf("Encoded (buffer): %s\n", buffer);
+        printf("============================================\n");
     } else {
         printf("Encoding failed\n");
     }
