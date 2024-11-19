@@ -24,8 +24,9 @@
 
 #ifndef BASE64_H
 #define BASE64_H
-
+//
 #define BASE64_TABLE "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+#include <stddef.h>
 
 #define GET_BASE64_CHAR(index) (BASE64_TABLE[(index) & 0x3F])
 

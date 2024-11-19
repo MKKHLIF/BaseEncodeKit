@@ -1,8 +1,5 @@
-//
-// Created by mk on 15/11/2024.
-//
-
 #include "base64.h"
+#include <stdint.h>
 #include <stdlib.h>
 
 
@@ -18,7 +15,7 @@ void add_padding(char *output, size_t *j, const int padding) {
     }
 }
 
-char *base64_encode(const uint8_t *in, const size_t in_sz) {
+char *base64_encode(const char *in, const size_t in_sz) {
     size_t output_len = 4 * ((in_sz + 2) / 3);
 
     output_len += 2;
