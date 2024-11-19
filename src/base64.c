@@ -54,13 +54,8 @@
 //     return output;
 // }
 
-/**
- * @brief Calculate the required buffer size for Base64 encoding
- * @param input_length Length of the input data in bytes
- * @return Size needed for the Base64 encoded string including null terminator
- * @note Returns 0 if input_length would cause size_t overflow
- */
-size_t base64_buf_sz(const size_t input_length) {
+
+size_t base64_buff_sz(const size_t input_length) {
     // Check for potential overflow in calculation
     if (input_length > (SIZE_MAX - 3) / 4) {
         return 0;

@@ -48,4 +48,13 @@ ssize_t base64_encode(char *restrict out,
                       const uint8_t *restrict in,
                       size_t in_sz);
 
+
+/**
+ * @brief Calculate the required buffer size for Base64 encoding
+ * @param input_length Length of the input data in bytes
+ * @return Size needed for the Base64 encoded string including null terminator
+ * @note Returns 0 if input_length would cause size_t overflow
+ */
+size_t base64_buff_sz(const size_t input_length);
+
 #endif //BASE64_H
