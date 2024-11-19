@@ -24,18 +24,28 @@
 
 #ifndef BASE64_H
 #define BASE64_H
-//
-#define BASE64_TABLE "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-#include <stddef.h>
-
-#define GET_BASE64_CHAR(index) (BASE64_TABLE[(index) & 0x3F])
-
-#define EXTRACT_6_BITS(buffer, bits, shift) \
-(((buffer) >> ((bits) - (shift))) & 0x3F)
 #include <stdint.h>
 
-
-char *base64_encode(const char *in, size_t in_sz);
-
+/**
+ * @brief Encodes binary data using Base64 encoding scheme
+ *
+ * @param out Output buffer to store the encoded string
+ *            Must be at least base64_encode_len(in_sz) bytes
+ * @param out_sz Size of the output buffer
+ * @param in Input binary data to encode
+ *           Using uint8_t makes the binary nature explicit
+ * @param in_sz Size of input data in bytes
+ *              Limited to SIZE_MAX/4 - 1 to prevent overflow
+ *
+ * @return Number of bytes written (excluding null terminator) on success
+ *         -1 on NULL pointers or insufficient buffer size
+ *         -2 on input size too large
+ *
+ * @note Output is always null-terminated if out_sz > 0
+ */
+ssize_t base64_encode(char *restrict out,
+                      size_t out_sz,
+                      const uint8_t *restrict in,
+                      size_t in_sz);
 
 #endif //BASE64_H
