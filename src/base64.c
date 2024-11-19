@@ -75,7 +75,7 @@ ssize_t base64_encode(char *out, const size_t out_sz, const uint8_t *in, const s
         return -1;
     }
 
-    const size_t required_sz = base64_buf_sz(in_sz);
+    const size_t required_sz = base64_buff_sz(in_sz);
     if (required_sz == 0) {
         return -2; // Input too large
     }
