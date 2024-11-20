@@ -81,7 +81,16 @@ ssize_t base64_decode(uint8_t *restrict out,
  * @return Size needed for the Base64 encoded string including null terminator
  * @note Returns 0 if input_length would cause size_t overflow
  */
-size_t base64_encoded_size(const size_t input_length);
+size_t base64_encoded_size(size_t input_length);
+
+
+/**
+ * @brief Calculates the required buffer size for decoding a Base64-encoded string.
+ *
+ * @param in_sz Size of the input Base64 string.
+ * @return The size of the decoded buffer (in bytes).
+ */
+size_t base64_decoded_size(size_t in_sz);
 
 
 #endif //BASE64_H

@@ -10,6 +10,10 @@ size_t base64_encoded_size(const size_t input_length) {
     return 4 * ((input_length + 2) / 3) + 1;
 }
 
+size_t base64_decoded_size(const size_t in_sz) {
+    return (in_sz / 4) * 3;
+}
+
 
 ssize_t base64_encode(char *out, const size_t out_sz, const uint8_t *in, const size_t in_sz) {
     if (!out || out_sz == 0) {
