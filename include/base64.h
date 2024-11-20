@@ -74,6 +74,7 @@ ssize_t base64_decode(uint8_t *restrict out,
                       const char *restrict in,
                       size_t in_sz);
 
+
 /**
  * @brief Calculate the required buffer size for Base64 encoding
  * @param input_length Length of the input data in bytes
