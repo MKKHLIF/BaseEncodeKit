@@ -97,7 +97,7 @@ ssize_t base64_decode(uint8_t *restrict out,
  *       The output is always truncated to the correct size and returned.
  *       If the output buffer is too small, the required buffer size is returned as a positive value.
  */
-ssize_t base64_decode_url(uint8_t *restrict out,
+ssize_t base64_url_decode(uint8_t *restrict out,
                           size_t out_sz,
                           const char *restrict in,
                           size_t in_sz);
