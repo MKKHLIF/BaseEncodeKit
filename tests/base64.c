@@ -40,10 +40,10 @@ void test_base64_encode_decode(void) {
 
         // Assuming you have a decoding function, you can test it similarly:
         // For example, if you had base64_decode function, you could write:
-        // char decoded[64];
-        // ssize_t dec_len = base64_decode(decoded, sizeof(decoded), encoded, enc_len);
-        // decoded[dec_len] = '\0';
-        // assert_string_equal(testVectors[i].decoding, decoded);
+        char decoded[64];
+        ssize_t dec_len = base64_decode(decoded, sizeof(decoded), encoded, enc_len);
+        decoded[dec_len] = '\0';
+        assert_string_equal(testVectors[i].decoding, decoded);
     }
 }
 
