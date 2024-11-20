@@ -124,3 +124,71 @@ ssize_t base64_decode(uint8_t *restrict out,
 
     return out_idx; // Return the number of bytes written to the output buffer
 }
+
+ssize_t base64_url_decode(uint8_t *out, size_t out_sz, const char *in, size_t in_sz) {
+    // Base64 URL decoding alphabet (URL-safe variant)
+    static const int8_t base64_decode_table[256] = {
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1,
+        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
+        -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, 63,
+        -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1
+        // Rest of the table initialized to -1
+    };
+
+    // Validate input
+    if (!out || !in || in_sz == 0) {
+        return -1;
+    }
+
+    // Track decoded bytes and input parsing
+    size_t out_idx = 0;
+    size_t in_idx = 0;
+    uint32_t bits = 0;
+    int bits_collected = 0;
+
+    while (in_idx < in_sz) {
+        // Skip whitespace and ignored characters
+        char c = in[in_idx];
+        if (c == '\r' || c == '\n' || c == ' ' || c == '\t') {
+            in_idx++;
+            continue;
+        }
+
+        // Decode character
+        int8_t decoded = base64_decode_table[(unsigned char) c];
+        if (decoded == -1) {
+            // Invalid character
+            return -1;
+        }
+
+        // Accumulate bits
+        bits = (bits << 6) | decoded;
+        bits_collected += 6;
+
+        // When we have 8 or more bits, output a byte
+        if (bits_collected >= 8) {
+            bits_collected -= 8;
+            uint8_t byte = (bits >> bits_collected) & 0xFF;
+
+            // Check output buffer
+            if (out_idx >= out_sz) {
+                return -1; // Output buffer too small
+            }
+
+            out[out_idx++] = byte;
+        }
+
+        in_idx++;
+    }
+
+    // Check if we have a valid Base64 sequence
+    if (bits_collected != 0) {
+        return -1; // Incomplete Base64 sequence
+    }
+
+    return out_idx;
+}
