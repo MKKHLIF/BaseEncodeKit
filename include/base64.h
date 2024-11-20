@@ -30,7 +30,7 @@
  * @brief Encodes binary data using Base64 encoding scheme
  *
  * @param out Output buffer to store the encoded string
- *            Must be at least base64_buff_sz(in_sz) bytes
+ *            Must be at least base64_encoded_size(in_sz) bytes
  * @param out_sz Size of the output buffer
  * @param in Input binary data to encode
  *           Using uint8_t makes the binary nature explicit
@@ -50,11 +50,47 @@ ssize_t base64_encode(char *restrict out,
 
 
 /**
+ * @brief Decodes a Base64-encoded string into binary data.
+ *
+ * @param out         Output buffer to store the decoded binary data.
+ *                   Must be at least `base64_decoded_size(in_sz)` bytes.
+ * @param out_sz      Size of the output buffer.
+ * @param in          Input Base64-encoded string.
+ * @param in_sz       Size of the input string (excluding null terminator).
+ *
+ * @return On success, the number of bytes written to the output buffer.
+ *         On error:
+ *         - `BASE64_ERR_NULL_PTR` if any input or output pointers are `NULL`.
+ *         - `BASE64_ERR_SMALL_BUFFER` if the output buffer is too small (returns required size).
+ *         - `BASE64_ERR_INVALID_INPUT` if the input contains invalid Base64 characters or padding errors.
+ *         - `BASE64_ERR_EMPTY_INPUT` if the input string is empty.
+ *
+ * @note The input string may contain `=` padding characters at the end. The output is always
+ *       truncated to the correct size and returned. If the output buffer is too small, the
+ *       required buffer size is returned as a positive value.
+ */
+ssize_t base64_decode(uint8_t *restrict out,
+                      size_t out_sz,
+                      const char *restrict in,
+                      size_t in_sz);
+
+
+/**
  * @brief Calculate the required buffer size for Base64 encoding
  * @param input_length Length of the input data in bytes
  * @return Size needed for the Base64 encoded string including null terminator
  * @note Returns 0 if input_length would cause size_t overflow
  */
-size_t base64_buff_sz(const size_t input_length);
+size_t base64_encoded_size(size_t input_length);
+
+
+/**
+ * @brief Calculates the required buffer size for decoding a Base64-encoded string.
+ *
+ * @param in_sz Size of the input Base64 string.
+ * @return The size of the decoded buffer (in bytes).
+ */
+size_t base64_decoded_size(size_t in_sz);
+
 
 #endif //BASE64_H
