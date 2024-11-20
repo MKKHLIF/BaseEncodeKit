@@ -76,6 +76,34 @@ ssize_t base64_decode(uint8_t *restrict out,
 
 
 /**
+ * @brief Decodes a URL-safe Base64-encoded string into binary data.
+ *
+ * @param out         Output buffer to store the decoded binary data.
+ *                   Must be at least `base64_decoded_size(in_sz)` bytes.
+ * @param out_sz      Size of the output buffer.
+ * @param in          Input URL-safe Base64-encoded string.
+ * @param in_sz       Size of the input string (excluding null terminator).
+ *
+ * @return On success, the number of bytes written to the output buffer.
+ *         On error:
+ *         - `BASE64_ERR_NULL_PTR` if any input or output pointers are `NULL`.
+ *         - `BASE64_ERR_SMALL_BUFFER` if the output buffer is too small (returns required size).
+ *         - `BASE64_ERR_INVALID_INPUT` if the input contains invalid Base64 characters or padding errors.
+ *         - `BASE64_ERR_EMPTY_INPUT` if the input string is empty.
+ *
+ * @note The input string may contain URL-safe Base64 encoding characters, where:
+ *       - The '+' character is replaced with '-' (minus) and
+ *       - The '/' character is replaced with '_' (underscore).
+ *       The output is always truncated to the correct size and returned.
+ *       If the output buffer is too small, the required buffer size is returned as a positive value.
+ */
+ssize_t base64_decode_url(uint8_t *restrict out,
+                          size_t out_sz,
+                          const char *restrict in,
+                          size_t in_sz);
+
+
+/**
  * @brief Calculate the required buffer size for Base64 encoding
  * @param input_length Length of the input data in bytes
  * @return Size needed for the Base64 encoded string including null terminator
