@@ -30,7 +30,7 @@
  * @brief Encodes binary data using Base64 encoding scheme
  *
  * @param out Output buffer to store the encoded string
- *            Must be at least base64_buff_sz(in_sz) bytes
+ *            Must be at least base64_encoded_size(in_sz) bytes
  * @param out_sz Size of the output buffer
  * @param in Input binary data to encode
  *           Using uint8_t makes the binary nature explicit
@@ -81,6 +81,7 @@ ssize_t base64_decode(uint8_t *restrict out,
  * @return Size needed for the Base64 encoded string including null terminator
  * @note Returns 0 if input_length would cause size_t overflow
  */
-size_t base64_buff_sz(const size_t input_length);
+size_t base64_encoded_size(const size_t input_length);
+
 
 #endif //BASE64_H

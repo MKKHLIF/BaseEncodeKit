@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-size_t base64_buff_sz(const size_t input_length) {
+size_t base64_encoded_size(const size_t input_length) {
     // Check for potential overflow in calculation
     if (input_length > (SIZE_MAX - 3) / 4) {
         return 0;
@@ -22,7 +22,7 @@ ssize_t base64_encode(char *out, const size_t out_sz, const uint8_t *in, const s
         return -1;
     }
 
-    const size_t required_sz = base64_buff_sz(in_sz);
+    const size_t required_sz = base64_encoded_size(in_sz);
     if (required_sz == 0) {
         return -2; // Input too large
     }
