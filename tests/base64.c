@@ -14,12 +14,13 @@ void assert_string_equal(const char *expected, const char *actual) {
     TEST_ASSERT_EQUAL_STRING(expected, actual);
 }
 
+struct TestVector {
+    const char *decoding;
+    const char *encoding;
+};
+
 void test_base64_encode_decode(void) {
     // Test vectors for Base64 encoding and decoding
-    struct TestVector {
-        const char *decoding;
-        const char *encoding;
-    };
 
     const struct TestVector testVectors[] = {
         {"", ""},
@@ -42,6 +43,35 @@ void test_base64_encode_decode(void) {
         // For example, if you had base64_decode function, you could write:
         char decoded[64];
         ssize_t dec_len = base64_decode(decoded, sizeof(decoded), encoded, enc_len);
+        decoded[dec_len] = '\0';
+        assert_string_equal(testVectors[i].decoding, decoded);
+    }
+}
+
+void test_base64_url_encode_decode(void) {
+    const struct TestVector testVectors[] = {
+        {"", ""},
+        {"\xff", "_w"},
+        {"f\xff", "Zv8"},
+        {"fo\xff", "Zm__"},
+        {"foo\xff", "Zm9v_w"},
+        {"foob\xff", "Zm9vYv8"},
+        {"fooba\xff", "Zm9vYmH_"},
+        {"foobar\xff", "Zm9vYmFy_w"},
+    };
+
+    for (size_t i = 0; i < sizeof(testVectors) / sizeof(testVectors[0]); ++i) {
+        char encoded[64];
+        ssize_t enc_len = base64_url_encode(encoded, sizeof(encoded), (const uint8_t *) testVectors[i].decoding,
+                                            strlen(testVectors[i].decoding));
+        encoded[enc_len] = '\0'; // Null-terminate the encoded string
+        assert_string_equal(testVectors[i].encoding, encoded);
+
+
+        // Assuming you have a decoding function, you can test it similarly:
+        // For example, if you had base64_decode function, you could write:
+        char decoded[64];
+        ssize_t dec_len = base64_url_decode(decoded, sizeof(decoded), encoded, enc_len);
         decoded[dec_len] = '\0';
         assert_string_equal(testVectors[i].decoding, decoded);
     }
