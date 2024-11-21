@@ -125,7 +125,7 @@ ssize_t base64_decode(uint8_t *restrict out,
     return out_idx; // Return the number of bytes written to the output buffer
 }
 
-ssize_t base64_encode_url(uint8_t *out, size_t out_sz, const uint8_t *in, size_t in_sz) {
+ssize_t base64_url_encode(uint8_t *out, size_t out_sz, const uint8_t *in, size_t in_sz) {
     // Validate input and output pointers
     if (!in || !out) {
         return BASE64_ERR_NULL_PTR;

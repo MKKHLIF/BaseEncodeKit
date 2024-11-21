@@ -97,7 +97,7 @@ ssize_t base64_decode(uint8_t *restrict out,
  *       Padding characters '=' may be included at the end of the string.
  *       The output buffer must be large enough to hold the encoded result, including the padding and null terminator.
  */
-ssize_t base64_encode_url(uint8_t *restrict out,
+ssize_t base64_url_encode(uint8_t *restrict out,
                           size_t out_sz,
                           const uint8_t *restrict in,
                           size_t in_sz);
