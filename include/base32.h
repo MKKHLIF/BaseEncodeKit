@@ -48,4 +48,26 @@ ssize_t base32_encode(char *restrict out,
                       const uint8_t *restrict in,
                       size_t in_sz);
 
+
+/**
+ * @brief Decodes Base32 encoded data into binary form
+ *
+ * @param out Output buffer to store the decoded binary data
+ *            Must be at least base32_decoded_size(in_sz) bytes
+ * @param out_sz Size of the output buffer
+ * @param in Input Base32 encoded string
+ * @param in_sz Size of the input string (including padding)
+ *
+ * @return Number of bytes written to the output buffer on success
+ *         -1 on NULL pointers or insufficient buffer size
+ *         -2 on invalid Base32 input or illegal characters
+ *         -3 on invalid padding
+ *
+ * @note Output is written as raw binary data
+ */
+ssize_t base32_decode(uint8_t *restrict out,
+                      size_t out_sz,
+                      const char *restrict in,
+                      size_t in_sz);
+
 #endif //BASE32_H
