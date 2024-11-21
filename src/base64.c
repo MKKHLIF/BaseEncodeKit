@@ -124,3 +124,133 @@ ssize_t base64_decode(uint8_t *restrict out,
 
     return out_idx; // Return the number of bytes written to the output buffer
 }
+
+ssize_t base64_url_encode(uint8_t *out, size_t out_sz, const uint8_t *in, size_t in_sz) {
+    // Validate input and output pointers
+    if (!in || !out) {
+        return BASE64_ERR_NULL_PTR;
+    }
+
+    // Validate the input size
+    if (in_sz == 0) {
+        return BASE64_ERR_EMPTY_INPUT;
+    }
+
+    // Calculate the required output size
+    size_t encoded_len = base64_encoded_size(in_sz);
+
+    // Check if the output buffer is large enough
+    if (out_sz < encoded_len) {
+        return BASE64_ERR_SMALL_BUFFER;
+    }
+
+    // Placeholder for base64 encoding logic
+    size_t i, j;
+    for (i = 0, j = 0; i < in_sz;) {
+        // Process 3 bytes at a time
+        uint32_t buffer = 0;
+        for (int k = 0; k < 3; ++k) {
+            if (i < in_sz) {
+                buffer = (buffer << 8) | in[i++];
+            } else {
+                buffer <<= 8; // Pad remaining bits with zero
+            }
+        }
+
+        // Map the 24-bit buffer to 4 Base64 characters
+        for (int k = 0; k < 4; ++k) {
+            if (i + k <= in_sz) {
+                uint8_t index = (buffer >> (18 - 6 * k)) & 0x3F;
+                if (index < 26) {
+                    out[j++] = 'A' + index;
+                } else if (index < 52) {
+                    out[j++] = 'a' + (index - 26);
+                } else if (index < 62) {
+                    out[j++] = '0' + (index - 52);
+                } else if (index == 62) {
+                    out[j++] = '-'; // URL-safe Base64: '+' becomes '-'
+                } else if (index == 63) {
+                    out[j++] = '_'; // URL-safe Base64: '/' becomes '_'
+                }
+            }
+        }
+    }
+
+    // Add padding if necessary
+    while (j < encoded_len) {
+        out[j++] = '='; // Add padding character if needed
+    }
+
+    // Null-terminate the output string
+    out[j] = '\0';
+
+    return encoded_len - 1; // Exclude the null terminator from the byte count
+}
+
+ssize_t base64_url_decode(uint8_t *out, size_t out_sz, const char *in, size_t in_sz) {
+    // Base64 URL decoding alphabet (URL-safe variant)
+    static const int8_t base64_decode_table[256] = {
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1,
+        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
+        -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, 63,
+        -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1
+        // Rest of the table initialized to -1
+    };
+
+    // Validate input
+    if (!out || !in || in_sz == 0) {
+        return -1;
+    }
+
+    // Track decoded bytes and input parsing
+    size_t out_idx = 0;
+    size_t in_idx = 0;
+    uint32_t bits = 0;
+    int bits_collected = 0;
+
+    while (in_idx < in_sz) {
+        // Skip whitespace and ignored characters
+        char c = in[in_idx];
+        if (c == '\r' || c == '\n' || c == ' ' || c == '\t') {
+            in_idx++;
+            continue;
+        }
+
+        // Decode character
+        int8_t decoded = base64_decode_table[(unsigned char) c];
+        if (decoded == -1) {
+            // Invalid character
+            return -1;
+        }
+
+        // Accumulate bits
+        bits = (bits << 6) | decoded;
+        bits_collected += 6;
+
+        // When we have 8 or more bits, output a byte
+        if (bits_collected >= 8) {
+            bits_collected -= 8;
+            uint8_t byte = (bits >> bits_collected) & 0xFF;
+
+            // Check output buffer
+            if (out_idx >= out_sz) {
+                return -1; // Output buffer too small
+            }
+
+            out[out_idx++] = byte;
+        }
+
+        in_idx++;
+    }
+
+    // Check if we have a valid Base64 sequence
+    if (bits_collected != 0) {
+        return -1; // Incomplete Base64 sequence
+    }
+
+    return out_idx;
+}

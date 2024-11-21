@@ -76,6 +76,62 @@ ssize_t base64_decode(uint8_t *restrict out,
 
 
 /**
+ * @brief Encodes binary data into a URL-safe Base64 string.
+ *
+ * @param out         Output buffer to store the URL-safe Base64-encoded string.
+ *                   Must be large enough to hold the encoded string (including null terminator).
+ * @param out_sz      Size of the output buffer.
+ * @param in          Input binary data to be encoded.
+ * @param in_sz       Size of the input data.
+ *
+ * @return On success, the number of bytes written to the output buffer (excluding null terminator).
+ *         On error:
+ *         - `BASE64_ERR_NULL_PTR` if any input or output pointers are `NULL`.
+ *         - `BASE64_ERR_SMALL_BUFFER` if the output buffer is too small (returns required size).
+ *         - `BASE64_ERR_INVALID_INPUT` if the input contains invalid data.
+ *         - `BASE64_ERR_EMPTY_INPUT` if the input data is empty.
+ *
+ * @note The URL-safe Base64 encoding uses the following character mapping:
+ *       - '+' is replaced with '-' (minus),
+ *       - '/' is replaced with '_' (underscore).
+ *       Padding characters '=' may be included at the end of the string.
+ *       The output buffer must be large enough to hold the encoded result, including the padding and null terminator.
+ */
+ssize_t base64_url_encode(uint8_t *restrict out,
+                          size_t out_sz,
+                          const uint8_t *restrict in,
+                          size_t in_sz);
+
+
+/**
+ * @brief Decodes a URL-safe Base64-encoded string into binary data.
+ *
+ * @param out         Output buffer to store the decoded binary data.
+ *                   Must be at least `base64_decoded_size(in_sz)` bytes.
+ * @param out_sz      Size of the output buffer.
+ * @param in          Input URL-safe Base64-encoded string.
+ * @param in_sz       Size of the input string (excluding null terminator).
+ *
+ * @return On success, the number of bytes written to the output buffer.
+ *         On error:
+ *         - `BASE64_ERR_NULL_PTR` if any input or output pointers are `NULL`.
+ *         - `BASE64_ERR_SMALL_BUFFER` if the output buffer is too small (returns required size).
+ *         - `BASE64_ERR_INVALID_INPUT` if the input contains invalid Base64 characters or padding errors.
+ *         - `BASE64_ERR_EMPTY_INPUT` if the input string is empty.
+ *
+ * @note The input string may contain URL-safe Base64 encoding characters, where:
+ *       - The '+' character is replaced with '-' (minus) and
+ *       - The '/' character is replaced with '_' (underscore).
+ *       The output is always truncated to the correct size and returned.
+ *       If the output buffer is too small, the required buffer size is returned as a positive value.
+ */
+ssize_t base64_url_decode(uint8_t *restrict out,
+                          size_t out_sz,
+                          const char *restrict in,
+                          size_t in_sz);
+
+
+/**
  * @brief Calculate the required buffer size for Base64 encoding
  * @param input_length Length of the input data in bytes
  * @return Size needed for the Base64 encoded string including null terminator
