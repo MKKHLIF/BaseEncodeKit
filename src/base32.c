@@ -148,3 +148,60 @@ size_t base32hex_decoded_size(size_t encoded_len) {
     // Worst case: 8 input chars decode to 5 bytes
     return (encoded_len * 5 + 7) / 8;
 }
+
+
+ssize_t base32hex_encode(char *restrict out,
+                         size_t out_sz,
+                         const uint8_t *restrict in,
+                         size_t in_sz) {
+    if (!out || !in || (out_sz && out_sz < base32hex_encoded_size(in_sz) + 1)) {
+        return -1;
+    }
+
+    // Prevent integer overflow
+    if (in_sz > SIZE_MAX / 5 - 1) {
+        return -2;
+    }
+
+    size_t encoded_len = 0;
+    size_t bit_buffer = 0;
+    int bits_in_buffer = 0;
+
+    for (size_t i = 0; i < in_sz; i++) {
+        // Push 8 bits into buffer
+        bit_buffer = (bit_buffer << 8) | in[i];
+        bits_in_buffer += 8;
+
+        // Extract 5-bit groups
+        while (bits_in_buffer >= 5) {
+            bits_in_buffer -= 5;
+
+            // Extract 5 most significant bits
+            size_t index = (bit_buffer >> bits_in_buffer) & 0x1F;
+
+            // Encode if buffer has space
+            if (encoded_len < out_sz - 1) {
+                out[encoded_len] = BASE32HEX_ENCODE_TABLE[index];
+            }
+            encoded_len++;
+        }
+    }
+
+    // Handle remaining bits
+    if (bits_in_buffer > 0) {
+        // Shift remaining bits to the right and pad
+        size_t index = (bit_buffer << (5 - bits_in_buffer)) & 0x1F;
+
+        if (encoded_len < out_sz - 1) {
+            out[encoded_len] = BASE32HEX_ENCODE_TABLE[index];
+        }
+        encoded_len++;
+    }
+
+    // Null-terminate if space allows
+    if (out_sz > 0) {
+        out[encoded_len < out_sz ? encoded_len : out_sz - 1] = '\0';
+    }
+
+    return encoded_len;
+}
