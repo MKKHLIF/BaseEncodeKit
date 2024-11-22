@@ -70,4 +70,52 @@ ssize_t base32_decode(uint8_t *restrict out,
                       const char *restrict in,
                       size_t in_sz);
 
+
+/**
+ * @brief Encodes binary data using Base32hex encoding scheme
+ *
+ * @param out Output buffer to store the encoded string
+ *            Must be at least base32hex_encoded_size(in_sz) bytes
+ * @param out_sz Size of the output buffer
+ * @param in Input binary data to encode
+ *           Using uint8_t makes the binary nature explicit
+ * @param in_sz Size of input data in bytes
+ *              Limited to SIZE_MAX/5 - 1 to prevent overflow
+ *
+ * @return Number of bytes written (excluding null terminator) on success
+ *         -1 on NULL pointers or insufficient buffer size
+ *         -2 on input size too large
+ *
+ * @note Output is always null-terminated if out_sz > 0
+ * @note Uses RFC 4648 Base32hex alphabet (0-9A-V instead of A-Z)
+ */
+ssize_t base32hex_encode(char *restrict out,
+                         size_t out_sz,
+                         const uint8_t *restrict in,
+                         size_t in_sz);
+
+/**
+ * @brief Calculates the required output buffer size for Base32hex encoding
+ *
+ * @param in_sz Size of input data in bytes
+ * @return Required output buffer size, or 0 if input would cause overflow
+ */
+size_t base32hex_encoded_size(size_t in_sz);
+
+/**
+ * @brief Decodes a Base32hex encoded string back to binary data
+ *
+ * @param out Output buffer for decoded binary data
+ * @param out_sz Size of the output buffer
+ * @param in Null-terminated Base32hex encoded string
+ * @param in_sz Length of input string (can be 0 to use strlen)
+ *
+ * @return Number of bytes written on success
+ *         -1 on NULL pointers or insufficient buffer size
+ *         -2 on invalid input characters
+ */
+ssize_t base32hex_decode(uint8_t *restrict out,
+                         size_t out_sz,
+                         const char *restrict in,
+                         size_t in_sz);
 #endif //BASE32_H
