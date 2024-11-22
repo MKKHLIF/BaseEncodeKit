@@ -143,3 +143,8 @@ size_t base32hex_encoded_size(size_t in_sz) {
 
     return ((in_sz * 8 + 4) / 5 + 7) / 8;
 }
+
+size_t base32hex_decoded_size(size_t encoded_len) {
+    // Worst case: 8 input chars decode to 5 bytes
+    return (encoded_len * 5 + 7) / 8;
+}
