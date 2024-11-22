@@ -1,4 +1,5 @@
 #include <base32.h>
+#include <string.h>
 
 #define BASE32_ALPHABET "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 #define BASE32_PAD '='
