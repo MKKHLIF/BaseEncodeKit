@@ -205,3 +205,53 @@ ssize_t base32hex_encode(char *restrict out,
 
     return encoded_len;
 }
+
+
+ssize_t base32hex_decode(uint8_t *restrict out,
+                         size_t out_sz,
+                         const char *restrict in,
+                         size_t in_sz) {
+    // If in_sz is 0, use strlen
+    if (in_sz == 0) {
+        in_sz = strlen(in);
+    }
+
+    // Validate inputs
+    if (!out || !in ||
+        (out_sz && out_sz < base32hex_decoded_size(in_sz))) {
+        return -1;
+    }
+
+    size_t decoded_len = 0;
+    size_t bit_buffer = 0;
+    int bits_in_buffer = 0;
+
+    for (size_t i = 0; i < in_sz; i++) {
+        // Ignore whitespace
+        if (in[i] <= ' ') continue;
+
+        // Decode character
+        int8_t val = BASE32HEX_DECODE_TABLE[(unsigned char) in[i]];
+        if (val < 0) {
+            return -2; // Invalid character
+        }
+
+        // Push 5 bits into buffer
+        bit_buffer = (bit_buffer << 5) | val;
+        bits_in_buffer += 5;
+
+        // Extract full bytes
+        while (bits_in_buffer >= 8) {
+            bits_in_buffer -= 8;
+            uint8_t byte = (bit_buffer >> bits_in_buffer) & 0xFF;
+
+            // Write to output if space allows
+            if (decoded_len < out_sz) {
+                out[decoded_len] = byte;
+            }
+            decoded_len++;
+        }
+    }
+
+    return decoded_len;
+}
