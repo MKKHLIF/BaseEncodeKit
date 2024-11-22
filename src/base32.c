@@ -135,3 +135,11 @@ ssize_t base32_decode(uint8_t *restrict out,
 
     return j; // Return the number of bytes written
 }
+
+size_t base32hex_encoded_size(size_t in_sz) {
+    if (in_sz > SIZE_MAX / 8 * 5) {
+        return 0; // Too large to safely encode
+    }
+
+    return ((in_sz * 8 + 4) / 5 + 7) / 8;
+}
