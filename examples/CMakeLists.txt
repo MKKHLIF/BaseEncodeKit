@@ -1,7 +1,5 @@
-set(This Base64Encoder)
+add_executable(base64 base64.c)
+add_executable(base32 base32.c)
 
-file(GLOB_RECURSE SRC_FILES "*.c")
-
-add_executable(${This} ${SRC_FILES})
-
-target_link_libraries(${This} PRIVATE BaseCoderLib)
+target_link_libraries(base64 PRIVATE BaseCoderLib)
+target_link_libraries(base32 PRIVATE BaseCoderLib)
