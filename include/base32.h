@@ -24,98 +24,119 @@
 
 #ifndef BASE32_H
 #define BASE32_H
+
+#include <stddef.h>
 #include <stdint.h>
 
 /**
- * @brief Encodes binary data using Base32 encoding scheme
- *
- * @param out Output buffer to store the encoded string
- *            Must be at least base32_encoded_size(in_sz) bytes
- * @param out_sz Size of the output buffer
- * @param in Input binary data to encode
- *           Using uint8_t makes the binary nature explicit
- * @param in_sz Size of input data in bytes
- *              Limited to SIZE_MAX/5 - 1 to prevent overflow
- *
- * @return Number of bytes written (excluding null terminator) on success
- *         -1 on NULL pointers or insufficient buffer size
- *         -2 on input size too large
- *
- * @note Output is always null-terminated if out_sz > 0
+ * @brief Error codes for base32 operations
  */
-ssize_t base32_encode(char *restrict out,
-                      size_t out_sz,
-                      const uint8_t *restrict in,
-                      size_t in_sz);
-
+typedef enum {
+ BASE32_SUCCESS = 0,
+ BASE32_ERROR_INVALID_INPUT, // Input contains invalid characters
+ BASE32_ERROR_INVALID_LENGTH, // Input length is invalid
+ BASE32_ERROR_BUFFER_TOO_SMALL, // Output buffer is too small
+ BASE32_ERROR_NULL_POINTER, // NULL pointer provided
+ BASE32_ERROR_PADDING, // Invalid padding
+ BASE32_ERROR_MEMORY // Memory allocation failure
+} base32_error_t;
 
 /**
- * @brief Decodes Base32 encoded data into binary form
- *
- * @param out Output buffer to store the decoded binary data
- *            Must be at least base32_decoded_size(in_sz) bytes
- * @param out_sz Size of the output buffer
- * @param in Input Base32 encoded string
- * @param in_sz Size of the input string (including padding)
- *
- * @return Number of bytes written to the output buffer on success
- *         -1 on NULL pointers or insufficient buffer size
- *         -2 on invalid Base32 input or illegal characters
- *         -3 on invalid padding
- *
- * @note Output is written as raw binary data
+ * @brief Configuration options for base32 operations
  */
-ssize_t base32_decode(uint8_t *restrict out,
-                      size_t out_sz,
-                      const char *restrict in,
-                      size_t in_sz);
-
+typedef struct {
+ int use_padding; // Whether to use padding characters (=)
+ int use_hex; // Use hex-based alphabet
+ int line_length; // Length of lines (0 for no line breaks)
+ char line_ending[3]; // Line ending sequence (e.g., "\r\n")
+} base32_config_t;
 
 /**
- * @brief Encodes binary data using Base32hex encoding scheme
- *
- * @param out Output buffer to store the encoded string
- *            Must be at least base32hex_encoded_size(in_sz) bytes
- * @param out_sz Size of the output buffer
- * @param in Input binary data to encode
- *           Using uint8_t makes the binary nature explicit
- * @param in_sz Size of input data in bytes
- *              Limited to SIZE_MAX/5 - 1 to prevent overflow
- *
- * @return Number of bytes written (excluding null terminator) on success
- *         -1 on NULL pointers or insufficient buffer size
- *         -2 on input size too large
- *
- * @note Output is always null-terminated if out_sz > 0
- * @note Uses RFC 4648 Base32hex alphabet (0-9A-V instead of A-Z)
+ * @brief Base32 context structure
  */
-ssize_t base32hex_encode(char *restrict out,
-                         size_t out_sz,
-                         const uint8_t *restrict in,
-                         size_t in_sz);
+typedef struct base32_ctx_t base32_ctx_t;
 
 /**
- * @brief Calculates the required output buffer size for Base32hex encoding
+ * @brief Initialize a base32 context with the given configuration
  *
- * @param in_sz Size of input data in bytes
- * @return Required output buffer size, or 0 if input would cause overflow
+ * @param ctx Pointer to context pointer to be initialized
+ * @param config Configuration options (NULL for defaults)
+ * @return base32_error_t Error code
  */
-size_t base32hex_encoded_size(size_t in_sz);
+base32_error_t base32_init(base32_ctx_t **ctx, const base32_config_t *config);
 
 /**
- * @brief Decodes a Base32hex encoded string back to binary data
+ * @brief Calculate required buffer size for encoding
  *
- * @param out Output buffer for decoded binary data
- * @param out_sz Size of the output buffer
- * @param in Null-terminated Base32hex encoded string
- * @param in_sz Length of input string (can be 0 to use strlen)
- *
- * @return Number of bytes written on success
- *         -1 on NULL pointers or insufficient buffer size
- *         -2 on invalid input characters
+ * @param input_length Length of input data
+ * @param ctx Base32 context
+ * @param output_size Pointer to store required output size
+ * @return base32_error_t Error code
  */
-ssize_t base32hex_decode(uint8_t *restrict out,
-                         size_t out_sz,
-                         const char *restrict in,
-                         size_t in_sz);
+base32_error_t base32_get_encode_size(size_t input_length,
+                                      const base32_ctx_t *ctx,
+                                      size_t *output_size);
+
+/**
+ * @brief Calculate required buffer size for decoding
+ *
+ * @param input_length Length of base32 input string
+ * @param ctx Base32 context
+ * @param output_size Pointer to store required output size
+ * @return base32_error_t Error code
+ */
+base32_error_t base32_get_decode_size(size_t input_length,
+                                      const base32_ctx_t *ctx,
+                                      size_t *output_size);
+
+/**
+ * @brief Encode binary data to base32 string
+ *
+ * @param ctx Base32 context
+ * @param input Input binary data
+ * @param input_length Length of input data
+ * @param output Output buffer for base32 string
+ * @param output_size Size of output buffer
+ * @param output_length Pointer to store actual output length
+ * @return base32_error_t Error code
+ */
+base32_error_t base32_encode(base32_ctx_t *ctx,
+                             const uint8_t *input,
+                             size_t input_length,
+                             char *output,
+                             size_t output_size,
+                             size_t *output_length);
+
+/**
+ * @brief Decode base32 string to binary data
+ *
+ * @param ctx Base32 context
+ * @param input Input base32 string
+ * @param input_length Length of input string
+ * @param output Output buffer for binary data
+ * @param output_size Size of output buffer
+ * @param output_length Pointer to store actual output length
+ * @return base32_error_t Error code
+ */
+base32_error_t base32_decode(base32_ctx_t *ctx,
+                             const char *input,
+                             size_t input_length,
+                             uint8_t *output,
+                             size_t output_size,
+                             size_t *output_length);
+
+/**
+ * @brief Get string description of error code
+ *
+ * @param error Error code
+ * @return const char* Error description
+ */
+const char *base32_error_string(base32_error_t error);
+
+/**
+ * @brief Free base32 context and associated resources
+ *
+ * @param ctx Base32 context to free
+ */
+void base32_free(base32_ctx_t *ctx);
 #endif //BASE32_H
