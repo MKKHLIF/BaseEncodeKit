@@ -1,258 +1,262 @@
-#include <base32.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include "base32.h"
 
-#define BASE32_ALPHABET "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-#define BASE32_PAD '='
-
-static const char BASE32HEX_ENCODE_TABLE[] =
+// Standard base32 and base32hex alphabets
+static const char BASE32_STANDARD_ALPHABET[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+static const char BASE32_HEX_ALPHABET[] =
         "0123456789ABCDEFGHIJKLMNOPQRSTUV";
 
-static const int8_t BASE32HEX_DECODE_TABLE[256] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1, -1, -1, -1, -1, -1,
-    -1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-    25, 26, 27, 28, 29, 30, 31, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-    25, 26, 27, 28, 29, 30, 31, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+// Internal context structure
+struct base32_ctx_t {
+    char alphabet[32];
+    int use_padding;
+    int use_hex;
+    int line_length;
+    char line_ending[3];
+    int current_line_length;
 };
 
+// Default configuration
+static const base32_config_t DEFAULT_CONFIG = {
+    .use_padding = 1,
+    .use_hex = 0,
+    .line_length = 76,
+    .line_ending = "\n"
+};
 
-ssize_t base32_encode(char *restrict out,
-                      size_t out_sz,
-                      const uint8_t *restrict in,
-                      size_t in_sz) {
-    if (out == NULL || in == NULL || out_sz == 0 || in_sz == 0) {
-        return -1; // Invalid pointers or sizes
+base32_error_t base32_init(base32_ctx_t **ctx, const base32_config_t *config) {
+    if (ctx == NULL) {
+        return BASE32_ERROR_NULL_POINTER;
     }
 
-    // Base32 encoding uses a 5-to-8 ratio, so the output size will be roughly 8/5 of the input size
-    size_t required_size = ((in_sz + 4) / 5) * 8; // This accounts for padding
-
-    if (out_sz < required_size + 1) {
-        // +1 for null terminator
-        return -1; // Insufficient output buffer size
+    // Allocate context
+    *ctx = malloc(sizeof(base32_ctx_t));
+    if (*ctx == NULL) {
+        return BASE32_ERROR_MEMORY;
     }
 
-    size_t i = 0, j = 0;
-    uint32_t buffer = 0;
-    size_t buffer_bits = 0;
+    // Use default config if not provided
+    const base32_config_t *effective_config = config ? config : &DEFAULT_CONFIG;
 
-    while (i < in_sz) {
-        buffer = (buffer << 8) | in[i++];
-        buffer_bits += 8;
+    // Set alphabet based on config
+    memcpy((*ctx)->alphabet,
+           effective_config->use_hex ? BASE32_HEX_ALPHABET : BASE32_STANDARD_ALPHABET,
+           32);
 
-        // While we have at least 5 bits, encode a Base32 character
-        while (buffer_bits >= 5) {
-            out[j++] = BASE32_ALPHABET[(buffer >> (buffer_bits - 5)) & 0x1F];
-            buffer_bits -= 5;
+    // Copy configuration
+    (*ctx)->use_padding = effective_config->use_padding;
+    (*ctx)->use_hex = effective_config->use_hex;
+    (*ctx)->line_length = effective_config->line_length;
+    (*ctx)->current_line_length = 0;
+    strncpy((*ctx)->line_ending, effective_config->line_ending, sizeof((*ctx)->line_ending) - 1);
+
+    return BASE32_SUCCESS;
+}
+
+base32_error_t base32_get_encode_size(size_t input_length,
+                                      const base32_ctx_t *ctx,
+                                      size_t *output_size) {
+    if (ctx == NULL || output_size == NULL) {
+        return BASE32_ERROR_NULL_POINTER;
+    }
+
+    // Calculate base32 encoded size
+    size_t base_size = 8 * ((input_length + 4) / 5);
+
+    // Add line breaks if needed
+    if (ctx->line_length > 0) {
+        size_t line_breaks = (base_size / ctx->line_length) * strlen(ctx->line_ending);
+        base_size += line_breaks;
+    }
+
+    *output_size = base_size + 1; // +1 for null terminator
+    return BASE32_SUCCESS;
+}
+
+base32_error_t base32_get_decode_size(size_t input_length,
+                                      const base32_ctx_t *ctx,
+                                      size_t *output_size) {
+    if (ctx == NULL || output_size == NULL) {
+        return BASE32_ERROR_NULL_POINTER;
+    }
+
+    // Estimate max decoded size
+    *output_size = (input_length * 5) / 8 + 2;
+    return BASE32_SUCCESS;
+}
+
+// Helper function to find index in alphabet
+static int find_alphabet_index(char c, const char *alphabet) {
+    for (int i = 0; i < 32; i++) {
+        if (alphabet[i] == c) return i;
+    }
+    return -1;
+}
+
+base32_error_t base32_encode(base32_ctx_t *ctx,
+                             const uint8_t *input,
+                             size_t input_length,
+                             char *output,
+                             size_t output_size,
+                             size_t *output_length) {
+    if (ctx == NULL || input == NULL || output == NULL || output_length == NULL) {
+        return BASE32_ERROR_NULL_POINTER;
+    }
+
+    size_t required_size;
+    base32_error_t size_check = base32_get_encode_size(input_length, ctx, &required_size);
+    if (size_check != BASE32_SUCCESS) return size_check;
+
+    if (output_size < required_size) {
+        return BASE32_ERROR_BUFFER_TOO_SMALL;
+    }
+
+    size_t out_idx = 0;
+    size_t line_count = 0;
+
+    for (size_t i = 0; i < input_length; i += 5) {
+        // Get 5 input bytes (or less at the end)
+        uint64_t n = 0;
+        for (int j = 0; j < 5 && (i + j) < input_length; j++) {
+            n = (n << 8) | input[i + j];
         }
-    }
 
-    // Handle any remaining bits (padding)
-    if (buffer_bits > 0) {
-        out[j++] = BASE32_ALPHABET[(buffer << (5 - buffer_bits)) & 0x1F];
+        // Shift to prepare for 8-character output
+        n <<= (8 * (5 - (input_length - i < 5 ? input_length - i : 5)));
+
+        // Generate 8 output characters
+        for (int j = 7; j >= 0; j--) {
+            int index = (n >> (j * 5)) & 0x1F;
+            output[out_idx++] = ctx->alphabet[index];
+        }
+
+        // Add line breaks if configured
+        if (ctx->line_length > 0) {
+            line_count += 8;
+            if (line_count >= ctx->line_length) {
+                strcpy(output + out_idx, ctx->line_ending);
+                out_idx += strlen(ctx->line_ending);
+                line_count = 0;
+            }
+        }
     }
 
     // Add padding if needed
-    while (j < required_size) {
-        out[j++] = BASE32_PAD;
-    }
-
-    out[j] = '\0'; // Null-terminate the output string
-    return j; // Return the number of characters written
-}
-
-ssize_t base32_decode(uint8_t *restrict out,
-                      size_t out_sz,
-                      const char *restrict in,
-                      size_t in_sz) {
-    if (out == NULL || in == NULL || out_sz == 0 || in_sz == 0) {
-        return -1; // Invalid pointers or sizes
-    }
-
-    // Base32 decoding uses a 8-to-5 ratio, so the output size will be roughly 5/8 of the input size
-    size_t required_size = (in_sz * 5) / 8;
-    if (out_sz < required_size) {
-        return -1; // Insufficient output buffer size
-    }
-
-    // Create a lookup table for the Base32 alphabet
-    uint8_t base32_table[256];
-    for (size_t i = 0; i < 256; ++i) {
-        base32_table[i] = 0xFF; // Invalid character by default
-    }
-
-    for (size_t i = 0; BASE32_ALPHABET[i] != '\0'; ++i) {
-        base32_table[(unsigned char) BASE32_ALPHABET[i]] = (uint8_t) i;
-    }
-
-    base32_table[(unsigned char) BASE32_PAD] = 0xFF; // Padding character
-
-    size_t i = 0, j = 0;
-    uint32_t buffer = 0;
-    size_t buffer_bits = 0;
-
-    while (i < in_sz) {
-        unsigned char c = in[i++];
-
-        // Skip padding characters
-        if (c == BASE32_PAD) {
-            break;
-        }
-
-        // Get the Base32 value for the current character
-        uint8_t value = base32_table[(unsigned char) c];
-
-        // Check if it's a valid Base32 character
-        if (value == 0xFF) {
-            return -2; // Invalid character in input
-        }
-
-        // Accumulate bits into the buffer
-        buffer = (buffer << 5) | value;
-        buffer_bits += 5;
-
-        // While we have at least 8 bits, write a byte to the output
-        while (buffer_bits >= 8) {
-            out[j++] = (buffer >> (buffer_bits - 8)) & 0xFF;
-            buffer_bits -= 8;
+    if (ctx->use_padding) {
+        size_t padding_needed = (5 - (input_length % 5)) % 5;
+        for (size_t i = 0; i < padding_needed; i++) {
+            output[out_idx++] = '=';
         }
     }
 
-    // Check for incomplete padding
-    if (buffer_bits != 0) {
-        return -3; // Invalid padding or incomplete data
-    }
+    output[out_idx] = '\0';
+    *output_length = out_idx;
 
-    return j; // Return the number of bytes written
+    return BASE32_SUCCESS;
 }
 
-size_t base32hex_encoded_size(size_t in_sz) {
-    if (in_sz > SIZE_MAX / 8 * 5) {
-        return 0; // Too large to safely encode
+base32_error_t base32_decode(base32_ctx_t *ctx,
+                             const char *input,
+                             size_t input_length,
+                             uint8_t *output,
+                             size_t output_size,
+                             size_t *output_length) {
+    if (ctx == NULL || input == NULL || output == NULL || output_length == NULL) {
+        return BASE32_ERROR_NULL_POINTER;
     }
 
-    return ((in_sz * 8 + 4) / 5 + 7) / 8;
-}
+    size_t required_size;
+    base32_error_t size_check = base32_get_decode_size(input_length, ctx, &required_size);
+    if (size_check != BASE32_SUCCESS) return size_check;
 
-size_t base32hex_decoded_size(size_t encoded_len) {
-    // Worst case: 8 input chars decode to 5 bytes
-    return (encoded_len * 5 + 7) / 8;
-}
-
-
-ssize_t base32hex_encode(char *restrict out,
-                         size_t out_sz,
-                         const uint8_t *restrict in,
-                         size_t in_sz) {
-    if (!out || !in || (out_sz && out_sz < base32hex_encoded_size(in_sz) + 1)) {
-        return -1;
+    if (output_size < required_size) {
+        return BASE32_ERROR_BUFFER_TOO_SMALL;
     }
 
-    // Prevent integer overflow
-    if (in_sz > SIZE_MAX / 5 - 1) {
-        return -2;
-    }
+    size_t out_idx = 0;
+    uint64_t n = 0;
+    int group_count = 0;
 
-    size_t encoded_len = 0;
-    size_t bit_buffer = 0;
-    int bits_in_buffer = 0;
+    for (size_t i = 0; i < input_length; i++) {
+        // Skip whitespace and line breaks
+        if (input[i] == ' ' || input[i] == '\n' || input[i] == '\r')
+            continue;
 
-    for (size_t i = 0; i < in_sz; i++) {
-        // Push 8 bits into buffer
-        bit_buffer = (bit_buffer << 8) | in[i];
-        bits_in_buffer += 8;
+        // Check for padding
+        if (input[i] == '=') {
+            if (group_count >= 2 && group_count <= 7) break;
+            group_count++;
+            continue;
+        }
 
-        // Extract 5-bit groups
-        while (bits_in_buffer >= 5) {
-            bits_in_buffer -= 5;
+        // Find index in alphabet
+        int index = find_alphabet_index(input[i], ctx->alphabet);
+        if (index == -1) {
+            return BASE32_ERROR_INVALID_INPUT;
+        }
 
-            // Extract 5 most significant bits
-            size_t index = (bit_buffer >> bits_in_buffer) & 0x1F;
+        n = (n << 5) | index;
+        group_count++;
 
-            // Encode if buffer has space
-            if (encoded_len < out_sz - 1) {
-                out[encoded_len] = BASE32HEX_ENCODE_TABLE[index];
+        // Every 8 characters (groups of 5-bit), output 5 bytes
+        if (group_count == 8) {
+            for (int j = 4; j >= 0; j--) {
+                output[out_idx++] = (n >> (j * 8)) & 0xFF;
             }
-            encoded_len++;
+            n = 0;
+            group_count = 0;
         }
     }
 
-    // Handle remaining bits
-    if (bits_in_buffer > 0) {
-        // Shift remaining bits to the right and pad
-        size_t index = (bit_buffer << (5 - bits_in_buffer)) & 0x1F;
+    // Handle remaining bits for the last group
+    int padding_bits = group_count == 7 ? 4 : group_count == 5 ? 3 : group_count == 4 ? 1 : group_count == 2 ? 0 : -1;
 
-        if (encoded_len < out_sz - 1) {
-            out[encoded_len] = BASE32HEX_ENCODE_TABLE[index];
+    if (padding_bits >= 0) {
+        n >>= padding_bits;
+        switch (group_count) {
+            case 7: // 4 bytes
+                output[out_idx++] = (n >> 24) & 0xFF;
+                output[out_idx++] = (n >> 16) & 0xFF;
+                output[out_idx++] = (n >> 8) & 0xFF;
+                output[out_idx++] = n & 0xFF;
+                break;
+            case 5: // 3 bytes
+                output[out_idx++] = (n >> 16) & 0xFF;
+                output[out_idx++] = (n >> 8) & 0xFF;
+                output[out_idx++] = n & 0xFF;
+                break;
+            case 4: // 2 bytes
+                output[out_idx++] = (n >> 8) & 0xFF;
+                output[out_idx++] = n & 0xFF;
+                break;
+            case 2: // 1 byte
+                output[out_idx++] = n & 0xFF;
+                break;
         }
-        encoded_len++;
     }
 
-    // Null-terminate if space allows
-    if (out_sz > 0) {
-        out[encoded_len < out_sz ? encoded_len : out_sz - 1] = '\0';
-    }
-
-    return encoded_len;
+    *output_length = out_idx;
+    return BASE32_SUCCESS;
 }
 
-
-ssize_t base32hex_decode(uint8_t *restrict out,
-                         size_t out_sz,
-                         const char *restrict in,
-                         size_t in_sz) {
-    // If in_sz is 0, use strlen
-    if (in_sz == 0) {
-        in_sz = strlen(in);
+const char *base32_error_string(base32_error_t error) {
+    switch (error) {
+        case BASE32_SUCCESS: return "Success";
+        case BASE32_ERROR_INVALID_INPUT: return "Invalid input";
+        case BASE32_ERROR_INVALID_LENGTH: return "Invalid length";
+        case BASE32_ERROR_BUFFER_TOO_SMALL: return "Buffer too small";
+        case BASE32_ERROR_NULL_POINTER: return "Null pointer";
+        case BASE32_ERROR_PADDING: return "Invalid padding";
+        case BASE32_ERROR_MEMORY: return "Memory allocation failed";
+        default: return "Unknown error";
     }
+}
 
-    // Validate inputs
-    if (!out || !in ||
-        (out_sz && out_sz < base32hex_decoded_size(in_sz))) {
-        return -1;
+void base32_free(base32_ctx_t *ctx) {
+    if (ctx != NULL) {
+        free(ctx);
     }
-
-    size_t decoded_len = 0;
-    size_t bit_buffer = 0;
-    int bits_in_buffer = 0;
-
-    for (size_t i = 0; i < in_sz; i++) {
-        // Ignore whitespace
-        if (in[i] <= ' ') continue;
-
-        // Decode character
-        int8_t val = BASE32HEX_DECODE_TABLE[(unsigned char) in[i]];
-        if (val < 0) {
-            return -2; // Invalid character
-        }
-
-        // Push 5 bits into buffer
-        bit_buffer = (bit_buffer << 5) | val;
-        bits_in_buffer += 5;
-
-        // Extract full bytes
-        while (bits_in_buffer >= 8) {
-            bits_in_buffer -= 8;
-            uint8_t byte = (bit_buffer >> bits_in_buffer) & 0xFF;
-
-            // Write to output if space allows
-            if (decoded_len < out_sz) {
-                out[decoded_len] = byte;
-            }
-            decoded_len++;
-        }
-    }
-
-    return decoded_len;
 }
