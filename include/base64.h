@@ -24,129 +24,119 @@
 
 #ifndef BASE64_H
 #define BASE64_H
+#include <stddef.h>
 #include <stdint.h>
 
 /**
- * @brief Encodes binary data using Base64 encoding scheme
- *
- * @param out Output buffer to store the encoded string
- *            Must be at least base64_encoded_size(in_sz) bytes
- * @param out_sz Size of the output buffer
- * @param in Input binary data to encode
- *           Using uint8_t makes the binary nature explicit
- * @param in_sz Size of input data in bytes
- *              Limited to SIZE_MAX/4 - 1 to prevent overflow
- *
- * @return Number of bytes written (excluding null terminator) on success
- *         -1 on NULL pointers or insufficient buffer size
- *         -2 on input size too large
- *
- * @note Output is always null-terminated if out_sz > 0
+ * @brief Error codes for base64 operations
  */
-ssize_t base64_encode(char *restrict out,
-                      size_t out_sz,
-                      const uint8_t *restrict in,
-                      size_t in_sz);
-
+typedef enum {
+ BASE64_SUCCESS = 0,
+ BASE64_ERROR_INVALID_INPUT, // Input contains invalid characters
+ BASE64_ERROR_INVALID_LENGTH, // Input length is invalid
+ BASE64_ERROR_BUFFER_TOO_SMALL, // Output buffer is too small
+ BASE64_ERROR_NULL_POINTER, // NULL pointer provided
+ BASE64_ERROR_PADDING, // Invalid padding
+ BASE64_ERROR_MEMORY // Memory allocation failure
+} base64_error_t;
 
 /**
- * @brief Decodes a Base64-encoded string into binary data.
- *
- * @param out         Output buffer to store the decoded binary data.
- *                   Must be at least `base64_decoded_size(in_sz)` bytes.
- * @param out_sz      Size of the output buffer.
- * @param in          Input Base64-encoded string.
- * @param in_sz       Size of the input string (excluding null terminator).
- *
- * @return On success, the number of bytes written to the output buffer.
- *         On error:
- *         - `BASE64_ERR_NULL_PTR` if any input or output pointers are `NULL`.
- *         - `BASE64_ERR_SMALL_BUFFER` if the output buffer is too small (returns required size).
- *         - `BASE64_ERR_INVALID_INPUT` if the input contains invalid Base64 characters or padding errors.
- *         - `BASE64_ERR_EMPTY_INPUT` if the input string is empty.
- *
- * @note The input string may contain `=` padding characters at the end. The output is always
- *       truncated to the correct size and returned. If the output buffer is too small, the
- *       required buffer size is returned as a positive value.
+ * @brief Configuration options for base64 operations
  */
-ssize_t base64_decode(uint8_t *restrict out,
-                      size_t out_sz,
-                      const char *restrict in,
-                      size_t in_sz);
-
+typedef struct {
+ int use_padding; // Whether to use padding characters (=)
+ int url_safe; // Use URL-safe alphabet (-_ instead of +/)
+ int line_length; // Length of lines (0 for no line breaks)
+ char line_ending[3]; // Line ending sequence (e.g., "\r\n")
+} base64_config_t;
 
 /**
- * @brief Encodes binary data into a URL-safe Base64 string.
- *
- * @param out         Output buffer to store the URL-safe Base64-encoded string.
- *                   Must be large enough to hold the encoded string (including null terminator).
- * @param out_sz      Size of the output buffer.
- * @param in          Input binary data to be encoded.
- * @param in_sz       Size of the input data.
- *
- * @return On success, the number of bytes written to the output buffer (excluding null terminator).
- *         On error:
- *         - `BASE64_ERR_NULL_PTR` if any input or output pointers are `NULL`.
- *         - `BASE64_ERR_SMALL_BUFFER` if the output buffer is too small (returns required size).
- *         - `BASE64_ERR_INVALID_INPUT` if the input contains invalid data.
- *         - `BASE64_ERR_EMPTY_INPUT` if the input data is empty.
- *
- * @note The URL-safe Base64 encoding uses the following character mapping:
- *       - '+' is replaced with '-' (minus),
- *       - '/' is replaced with '_' (underscore).
- *       Padding characters '=' may be included at the end of the string.
- *       The output buffer must be large enough to hold the encoded result, including the padding and null terminator.
+ * @brief Base64 context structure
  */
-ssize_t base64_url_encode(uint8_t *restrict out,
-                          size_t out_sz,
-                          const uint8_t *restrict in,
-                          size_t in_sz);
-
+typedef struct base64_ctx_t base64_ctx_t;
 
 /**
- * @brief Decodes a URL-safe Base64-encoded string into binary data.
+ * @brief Initialize a base64 context with the given configuration
  *
- * @param out         Output buffer to store the decoded binary data.
- *                   Must be at least `base64_decoded_size(in_sz)` bytes.
- * @param out_sz      Size of the output buffer.
- * @param in          Input URL-safe Base64-encoded string.
- * @param in_sz       Size of the input string (excluding null terminator).
- *
- * @return On success, the number of bytes written to the output buffer.
- *         On error:
- *         - `BASE64_ERR_NULL_PTR` if any input or output pointers are `NULL`.
- *         - `BASE64_ERR_SMALL_BUFFER` if the output buffer is too small (returns required size).
- *         - `BASE64_ERR_INVALID_INPUT` if the input contains invalid Base64 characters or padding errors.
- *         - `BASE64_ERR_EMPTY_INPUT` if the input string is empty.
- *
- * @note The input string may contain URL-safe Base64 encoding characters, where:
- *       - The '+' character is replaced with '-' (minus) and
- *       - The '/' character is replaced with '_' (underscore).
- *       The output is always truncated to the correct size and returned.
- *       If the output buffer is too small, the required buffer size is returned as a positive value.
+ * @param ctx Pointer to context pointer to be initialized
+ * @param config Configuration options (NULL for defaults)
+ * @return base64_error_t Error code
  */
-ssize_t base64_url_decode(uint8_t *restrict out,
-                          size_t out_sz,
-                          const char *restrict in,
-                          size_t in_sz);
-
+base64_error_t base64_init(base64_ctx_t **ctx, const base64_config_t *config);
 
 /**
- * @brief Calculate the required buffer size for Base64 encoding
- * @param input_length Length of the input data in bytes
- * @return Size needed for the Base64 encoded string including null terminator
- * @note Returns 0 if input_length would cause size_t overflow
+ * @brief Calculate required buffer size for encoding
+ *
+ * @param input_length Length of input data
+ * @param ctx Base64 context
+ * @param output_size Pointer to store required output size
+ * @return base64_error_t Error code
  */
-size_t base64_encoded_size(size_t input_length);
-
+base64_error_t base64_get_encode_size(size_t input_length,
+                                      const base64_ctx_t *ctx,
+                                      size_t *output_size);
 
 /**
- * @brief Calculates the required buffer size for decoding a Base64-encoded string.
+ * @brief Calculate required buffer size for decoding
  *
- * @param in_sz Size of the input Base64 string.
- * @return The size of the decoded buffer (in bytes).
+ * @param input_length Length of base64 input string
+ * @param ctx Base64 context
+ * @param output_size Pointer to store required output size
+ * @return base64_error_t Error code
  */
-size_t base64_decoded_size(size_t in_sz);
+base64_error_t base64_get_decode_size(size_t input_length,
+                                      const base64_ctx_t *ctx,
+                                      size_t *output_size);
 
+/**
+ * @brief Encode binary data to base64 string
+ *
+ * @param ctx Base64 context
+ * @param input Input binary data
+ * @param input_length Length of input data
+ * @param output Output buffer for base64 string
+ * @param output_size Size of output buffer
+ * @param output_length Pointer to store actual output length
+ * @return base64_error_t Error code
+ */
+base64_error_t base64_encode(base64_ctx_t *ctx,
+                             const uint8_t *input,
+                             size_t input_length,
+                             char *output,
+                             size_t output_size,
+                             size_t *output_length);
+
+/**
+ * @brief Decode base64 string to binary data
+ *
+ * @param ctx Base64 context
+ * @param input Input base64 string
+ * @param input_length Length of input string
+ * @param output Output buffer for binary data
+ * @param output_size Size of output buffer
+ * @param output_length Pointer to store actual output length
+ * @return base64_error_t Error code
+ */
+base64_error_t base64_decode(base64_ctx_t *ctx,
+                             const char *input,
+                             size_t input_length,
+                             uint8_t *output,
+                             size_t output_size,
+                             size_t *output_length);
+
+/**
+ * @brief Get string description of error code
+ *
+ * @param error Error code
+ * @return const char* Error description
+ */
+const char *base64_error_string(base64_error_t error);
+
+/**
+ * @brief Free base64 context and associated resources
+ *
+ * @param ctx Base64 context to free
+ */
+void base64_free(base64_ctx_t *ctx);
 
 #endif //BASE64_H
