@@ -27,26 +27,43 @@ This C library provides an implementation of the Base Encoding schemes defined i
    ```
 ## Usage
 
-### Base64 Encoding Example:
+### Base64 Encoding/Decoding Example:
 
 ```c
-#include "rfc4648.h"
+   #include "base64.h"
 
-const char *data = "Hello, World!";
-char *encoded = base64_encode((unsigned char*)data, strlen(data));
-printf("Encoded: %s\n", encoded);
-free(encoded);
+    base64_ctx_t *ctx;
+   
+    base64_config_t config = {
+        .use_padding = 1,
+        .url_safe = 0,
+        .line_length = 76,
+        .line_ending = "\n"
+    };
 
-```
-### Base64 Decoding Example:
+    // Initialize context
+    base64_init(&ctx, &config);
 
-```c
-#include "rfc4648.h"
+    // Prepare buffers
+    uint8_t input[] = "Hello, World!";
+    char encoded[100];
+    uint8_t decoded[100];
+    size_t encoded_len, decoded_len;
 
-const char *encoded = "SGVsbG8sIFdvcmxkIQ==";
-unsigned char *decoded = base64_decode(encoded, strlen(encoded));
-printf("Decoded: %s\n", decoded);
-free(decoded);
+    // Encode
+    base64_encode(ctx, input, strlen((char *) input),
+                  encoded, sizeof(encoded), &encoded_len);
+
+    printf("Encoded: %s\n", encoded);
+
+    // Decode
+    base64_decode(ctx, encoded, encoded_len,
+                  decoded, sizeof(decoded), &decoded_len);
+
+    printf("Decoded: %s\n", decoded);
+    // Free context when done
+    base64_free(ctx);
+
 ```
 
 ## License
