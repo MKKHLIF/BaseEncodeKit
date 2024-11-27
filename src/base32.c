@@ -88,14 +88,6 @@ base32_error_t base32_get_decode_size(size_t input_length,
     return BASE32_SUCCESS;
 }
 
-// Helper function to find index in alphabet
-static int find_alphabet_index(char c, const char *alphabet) {
-    for (int i = 0; i < 32; i++) {
-        if (alphabet[i] == c) return i;
-    }
-    return -1;
-}
-
 base32_error_t base32_encode(const base32_ctx_t *ctx,
                              const uint8_t *input,
                              const size_t input_length,
