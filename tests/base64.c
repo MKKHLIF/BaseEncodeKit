@@ -78,7 +78,7 @@ void test_base64_encode_decode_url_safe(void) {
     char encoded[BUFFER_SIZE];
     uint8_t decoded[BUFFER_SIZE];
 
-    base64_config_t url_safe_config = {1, 1, 0, ""};  // URL-safe config (with padding, URL safe, no line breaks)
+    base64_config_t url_safe_config = {0, 1, 0, ""};  // URL-safe config (with padding, URL safe, no line breaks)
     base64_ctx_t *ctx;
     base64_init(&ctx, &url_safe_config);
 

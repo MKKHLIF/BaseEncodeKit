@@ -99,7 +99,7 @@ base64_error_t base64_get_decode_size(size_t input_length,
  * @param output_length Pointer to store actual output length
  * @return base64_error_t Error code
  */
-base64_error_t base64_encode(base64_ctx_t *ctx,
+base64_error_t base64_encode(const base64_ctx_t *ctx,
                              const uint8_t *input,
                              size_t input_length,
                              char *output,

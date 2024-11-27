@@ -55,7 +55,7 @@ base64_error_t base64_init(base64_ctx_t **ctx, const base64_config_t *config) {
     return BASE64_SUCCESS;
 }
 
-base64_error_t base64_get_encode_size(size_t input_length,
+base64_error_t base64_get_encode_size(const size_t input_length,
                                       const base64_ctx_t *ctx,
                                       size_t *output_size) {
     if (ctx == NULL || output_size == NULL) {
@@ -67,7 +67,7 @@ base64_error_t base64_get_encode_size(size_t input_length,
 
     // Add line breaks if needed
     if (ctx->line_length > 0) {
-        size_t line_breaks = (base_size / ctx->line_length) * strlen(ctx->line_ending);
+        const size_t line_breaks = (base_size / ctx->line_length) * strlen(ctx->line_ending);
         base_size += line_breaks;
     }
 
@@ -75,7 +75,7 @@ base64_error_t base64_get_encode_size(size_t input_length,
     return BASE64_SUCCESS;
 }
 
-base64_error_t base64_get_decode_size(size_t input_length,
+base64_error_t base64_get_decode_size(const size_t input_length,
                                       const base64_ctx_t *ctx,
                                       size_t *output_size) {
     if (ctx == NULL || output_size == NULL) {
@@ -87,7 +87,7 @@ base64_error_t base64_get_decode_size(size_t input_length,
     return BASE64_SUCCESS;
 }
 
-const char *base64_error_string(base64_error_t error) {
+const char *base64_error_string(const base64_error_t error) {
     switch (error) {
         case BASE64_SUCCESS: return "Success";
         case BASE64_ERROR_INVALID_INPUT: return "Invalid input";
@@ -107,18 +107,18 @@ void base64_free(base64_ctx_t *ctx) {
 }
 
 // Helper function to find index in alphabet
-static int find_alphabet_index(char c, const char *alphabet) {
+static int find_alphabet_index(const char c, const char *alphabet) {
     for (int i = 0; i < 64; i++) {
         if (alphabet[i] == c) return i;
     }
     return -1;
 }
 
-base64_error_t base64_encode(base64_ctx_t *ctx,
+base64_error_t base64_encode(const base64_ctx_t *ctx,
                              const uint8_t *input,
-                             size_t input_length,
+                             const size_t input_length,
                              char *output,
-                             size_t output_size,
+                             const size_t output_size,
                              size_t *output_length) {
     if (ctx == NULL || input == NULL || output == NULL || output_length == NULL) {
         return BASE64_ERROR_NULL_POINTER;
@@ -132,38 +132,38 @@ base64_error_t base64_encode(base64_ctx_t *ctx,
         return BASE64_ERROR_BUFFER_TOO_SMALL;
     }
 
-    size_t out_idx = 0;
-    size_t line_count = 0;
+    size_t bits = 0;
+    uint32_t buffer = 0;
+    size_t output_index = 0;
 
-    for (size_t i = 0; i < input_length; i += 3) {
-        // Get 3 input bytes
-        uint32_t n = input[i] << 16;
-        n |= (i + 1 < input_length) ? (input[i + 1] << 8) : 0;
-        n |= (i + 2 < input_length) ? input[i + 2] : 0;
+    for (size_t i = 0; i < input_length; ++i) {
+        buffer <<= 8;
+        buffer += input[i];
+        bits += 8;
 
-        // Generate 4 output characters
-        output[out_idx++] = ctx->alphabet[(n >> 18) & 0x3F];
-        output[out_idx++] = ctx->alphabet[(n >> 12) & 0x3F];
-        output[out_idx++] = (i + 1 < input_length)
-                                ? ctx->alphabet[(n >> 6) & 0x3F]
-                                : (ctx->use_padding ? '=' : ctx->alphabet[(n >> 6) & 0x3F]);
-        output[out_idx++] = (i + 2 < input_length)
-                                ? ctx->alphabet[n & 0x3F]
-                                : (ctx->use_padding ? '=' : ctx->alphabet[n & 0x3F]);
-
-        // Add line breaks if configured
-        if (ctx->line_length > 0) {
-            line_count += 4;
-            if (line_count >= ctx->line_length) {
-                strcpy(output + out_idx, ctx->line_ending);
-                out_idx += strlen(ctx->line_ending);
-                line_count = 0;
-            }
+        while (bits >= 6) {
+            output[output_index++] = ctx->alphabet[(buffer >> (bits - 6)) & 0x3f];
+            buffer &= ~(0x3f << (bits - 6));
+            bits -= 6;
         }
     }
 
-    output[out_idx] = '\0';
-    *output_length = out_idx;
+    if (input_length % 3 == 1) {
+        buffer <<= 4;
+        output[output_index++] = ctx->alphabet[buffer & 0x3f];
+        if (ctx->use_padding) {
+            output[output_index++] = '=';
+            output[output_index++] = '=';
+        }
+    } else if (input_length % 3 == 2) {
+        buffer <<= 2;
+        output[output_index++] = ctx->alphabet[buffer & 0x3f];
+        if (ctx->use_padding) {
+            output[output_index++] = '=';
+        }
+    }
+    output[output_index] = '\0';
+    *output_length = output_index;
 
     return BASE64_SUCCESS;
 }
