@@ -96,64 +96,68 @@ static int find_alphabet_index(char c, const char *alphabet) {
     return -1;
 }
 
-base32_error_t base32_encode(base32_ctx_t *ctx,
+base32_error_t base32_encode(const base32_ctx_t *ctx,
                              const uint8_t *input,
-                             size_t input_length,
+                             const size_t input_length,
                              char *output,
-                             size_t output_size,
+                             const size_t output_size,
                              size_t *output_length) {
     if (ctx == NULL || input == NULL || output == NULL || output_length == NULL) {
         return BASE32_ERROR_NULL_POINTER;
     }
 
     size_t required_size;
-    base32_error_t size_check = base32_get_encode_size(input_length, ctx, &required_size);
+    const base32_error_t size_check = base32_get_encode_size(input_length, ctx, &required_size);
     if (size_check != BASE32_SUCCESS) return size_check;
 
     if (output_size < required_size) {
         return BASE32_ERROR_BUFFER_TOO_SMALL;
     }
 
-    size_t out_idx = 0;
-    size_t line_count = 0;
+    size_t bits = 0;
+    uint32_t buffer = 0;
+    size_t output_index = 0;
 
-    for (size_t i = 0; i < input_length; i += 5) {
-        // Get 5 input bytes (or less at the end)
-        uint64_t n = 0;
-        for (int j = 0; j < 5 && (i + j) < input_length; j++) {
-            n = (n << 8) | input[i + j];
-        }
+    for (size_t i = 0; i < input_length; ++i) {
+        buffer <<= 8;
+        buffer += input[i];
+        bits += 8;
 
-        // Shift to prepare for 8-character output
-        n <<= (8 * (5 - (input_length - i < 5 ? input_length - i : 5)));
-
-        // Generate 8 output characters
-        for (int j = 7; j >= 0; j--) {
-            int index = (n >> (j * 5)) & 0x1F;
-            output[out_idx++] = ctx->alphabet[index];
-        }
-
-        // Add line breaks if configured
-        if (ctx->line_length > 0) {
-            line_count += 8;
-            if (line_count >= ctx->line_length) {
-                strcpy(output + out_idx, ctx->line_ending);
-                out_idx += strlen(ctx->line_ending);
-                line_count = 0;
-            }
+        while (bits >= 5) {
+            output[output_index++] = ctx->alphabet[(buffer >> (bits - 5)) & 0x1f];
+            buffer &= ~(0x1f << (bits - 5));
+            bits -= 5;
         }
     }
 
-    // Add padding if needed
-    if (ctx->use_padding) {
-        size_t padding_needed = (5 - (input_length % 5)) % 5;
-        for (size_t i = 0; i < padding_needed; i++) {
-            output[out_idx++] = '=';
+    // Handle padding for the last few bytes
+    if (input_length % 5 == 1) {
+        buffer <<= 2;
+        output[output_index++] = ctx->alphabet[buffer & 0x1f];
+        if (ctx->use_padding) {
+            output[output_index++] = '='; output[output_index++] = '='; output[output_index++] = '='; output[output_index++] = '='; output[output_index++] = '='; output[output_index++] = '=';
+        }
+    } else if (input_length % 5 == 2) {
+        buffer <<= 4;
+        output[output_index++] = ctx->alphabet[buffer & 0x1f];
+        if (ctx->use_padding) {
+            output[output_index++] = '='; output[output_index++] = '='; output[output_index++] = '='; output[output_index++] = '=';
+        }
+    } else if (input_length % 5 == 3) {
+        buffer <<= 1;
+        output[output_index++] = ctx->alphabet[buffer & 0x1f];
+        if (ctx->use_padding) {
+            output[output_index++] = '='; output[output_index++] = '='; output[output_index++] = '=';
+        }
+    } else if (input_length % 5 == 4) {
+        buffer <<= 3;
+        output[output_index++] = ctx->alphabet[buffer & 0x1f];
+        if (ctx->use_padding) {
+            output[output_index++] = '=';
         }
     }
-
-    output[out_idx] = '\0';
-    *output_length = out_idx;
+    output[output_index] = '\0';
+    *output_length = output_index;
 
     return BASE32_SUCCESS;
 }
