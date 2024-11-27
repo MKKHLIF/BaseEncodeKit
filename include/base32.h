@@ -117,7 +117,7 @@ base32_error_t base32_encode(const base32_ctx_t *ctx,
  * @param output_length Pointer to store actual output length
  * @return base32_error_t Error code
  */
-base32_error_t base32_decode(base32_ctx_t *ctx,
+base32_error_t base32_decode(const base32_ctx_t *ctx,
                              const char *input,
                              size_t input_length,
                              uint8_t *output,
