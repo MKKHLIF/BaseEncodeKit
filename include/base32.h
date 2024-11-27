@@ -25,7 +25,6 @@
 #ifndef BASE32_H
 #define BASE32_H
 
-#include <stddef.h>
 #include <stdint.h>
 
 /**
@@ -100,11 +99,11 @@ base32_error_t base32_get_decode_size(size_t input_length,
  * @param output_length Pointer to store actual output length
  * @return base32_error_t Error code
  */
-base32_error_t base32_encode(base32_ctx_t *ctx,
+base32_error_t base32_encode(const base32_ctx_t *ctx,
                              const uint8_t *input,
-                             size_t input_length,
+                             const size_t input_length,
                              char *output,
-                             size_t output_size,
+                             const size_t output_size,
                              size_t *output_length);
 
 /**
