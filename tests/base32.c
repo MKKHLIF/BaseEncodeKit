@@ -4,12 +4,12 @@
 
 #include "base32.h"
 
-#define BUFFER_SIZE 128  // Example buffer size, adjust as needed
+#define BUFFER_SIZE 128
 
 struct Base32TestVector {
-    const char *input;          // Input string to be encoded
-    const char *encoded;        // Expected encoded base32 string using default alphabet
-    const char *encoded_hex;    // Expected encoded base32 string using hex-based alphabet (if needed)
+    const char *input;
+    const char *encoded;
+    const char *encoded_hex;
 };
 
 // Test vectors
@@ -23,22 +23,15 @@ const struct Base32TestVector base32TestVectors[] = {
     {"foobar", "MZXW6YTBOI======", "MZXW6YTBOI"},
 };
 
-
-// Helper function to compare error codes
 void assert_base32_error(base32_error_t error_code, base32_error_t expected_error) {
     TEST_ASSERT_EQUAL(error_code, expected_error);
 }
 
-// Test encoding and decoding with default config (base32 alphabet, with padding)
-void test_base32_encode_decode(void) {
-
+void test_base32_encode(void) {
     size_t output_size, output_length;
     char encoded[BUFFER_SIZE];
-    uint8_t decoded[BUFFER_SIZE];
-
     base32_config_t config = {1, 0, 0, ""};  // Default config (with padding, no hex, no line breaks)
     base32_ctx_t *ctx;
-
     base32_init(&ctx, &config);
 
     // Run the tests for each vector
@@ -49,25 +42,34 @@ void test_base32_encode_decode(void) {
                                                        encoded, output_size, &output_length));
         encoded[output_length] = '\0';  // Null-terminate the encoded string
         TEST_ASSERT_EQUAL_STRING(base32TestVectors[i].encoded, encoded);
+    }
 
+    base32_free(ctx);
+}
+
+void test_base32_decode(void) {
+    size_t output_size, output_length;
+    uint8_t decoded[BUFFER_SIZE];
+    base32_config_t config = {1, 0, 0, ""};  // Default config (with padding, no hex, no line breaks)
+    base32_ctx_t *ctx;
+    base32_init(&ctx, &config);
+
+    // Run the tests for each vector
+    for (size_t i = 0; i < sizeof(base32TestVectors) / sizeof(base32TestVectors[0]); i++) {
         // Decode
-        base32_get_decode_size(output_length, ctx, &output_size);
-        TEST_ASSERT_EQUAL(BASE32_SUCCESS, base32_decode(ctx, encoded, output_length, decoded, output_size, &output_length));
+        base32_get_decode_size(strlen(base32TestVectors[i].encoded), ctx, &output_size);
+        TEST_ASSERT_EQUAL(BASE32_SUCCESS, base32_decode(ctx, base32TestVectors[i].encoded, strlen(base32TestVectors[i].encoded),
+                                                       decoded, output_size, &output_length));
         decoded[output_length] = '\0';  // Null-terminate the decoded string
         TEST_ASSERT_EQUAL_STRING(base32TestVectors[i].input, (char *)decoded);
     }
 
     base32_free(ctx);
-
 }
 
-// Test encoding and decoding with hex-based config (base32hex alphabet)
-void test_base32_encode_decode_hex(void) {
+void test_base32hex_encode(void) {
     size_t output_size, output_length;
     char encoded[BUFFER_SIZE];
-    uint8_t decoded[BUFFER_SIZE];
-
-    // Set config for base32hex
     base32_config_t hex_config = {1, 1, 0, ""};  // Use hex alphabet (with padding, hex-based, no line breaks)
     base32_ctx_t *ctx;
     base32_init(&ctx, &hex_config);
@@ -80,17 +82,30 @@ void test_base32_encode_decode_hex(void) {
                                                        encoded, output_size, &output_length));
         encoded[output_length] = '\0';  // Null-terminate the encoded string
         TEST_ASSERT_EQUAL_STRING(base32TestVectors[i].encoded_hex, encoded);
+    }
 
+    base32_free(ctx);
+}
+
+void test_base32hex_decode(void) {
+    size_t output_size, output_length;
+    uint8_t decoded[BUFFER_SIZE];
+    base32_config_t hex_config = {1, 1, 0, ""};  // Use hex alphabet (with padding, hex-based, no line breaks)
+    base32_ctx_t *ctx;
+    base32_init(&ctx, &hex_config);
+
+    // Run the tests for each vector
+    for (size_t i = 0; i < sizeof(base32TestVectors) / sizeof(base32TestVectors[0]); i++) {
         // Decode
-        base32_get_decode_size(output_length, ctx, &output_size);
-        TEST_ASSERT_EQUAL(BASE32_SUCCESS, base32_decode(ctx, encoded, output_length, decoded, output_size, &output_length));
+        base32_get_decode_size(strlen(base32TestVectors[i].encoded_hex), ctx, &output_size);
+        TEST_ASSERT_EQUAL(BASE32_SUCCESS, base32_decode(ctx, base32TestVectors[i].encoded_hex, strlen(base32TestVectors[i].encoded_hex),
+                                                       decoded, output_size, &output_length));
         decoded[output_length] = '\0';  // Null-terminate the decoded string
         TEST_ASSERT_EQUAL_STRING(base32TestVectors[i].input, (char *)decoded);
     }
+
     base32_free(ctx);
-
 }
-
 // Test handling invalid inputs
 void test_base32_invalid_inputs(void) {
     base32_config_t hex_config = {1, 1, 0, ""};  // Use hex alphabet (with padding, hex-based, no line breaks)
