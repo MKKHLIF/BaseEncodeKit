@@ -2,10 +2,21 @@
 
 This C library provides an implementation of the Base Encoding schemes defined in [RFC 4648](https://tools.ietf.org/html/rfc4648), which includes the Base64, Base32, and Base16 (Hex) encoding and decoding algorithms.
 
-## Features
-- **Base64 Encoding & Decoding**: Encode and decode data using the Base64 alphabet (standard and URL-safe variants).
-- **Base32 Encoding & Decoding**: Encode and decode data using the Base32 alphabet (standard and Crockford variants).
-- **Base16 (Hex) Encoding & Decoding**: Encode and decode data as hexadecimal strings.
+## Key Features
+
+### Encoding & Decoding Capabilities
+
+- **Base64 Encoding & Decoding**
+   - **Standard Variant**: Encode and decode data using the standard Base64 alphabet.
+   - **URL-Safe Variant**: Encode and decode data using a URL-safe Base64 alphabet to ensure safe data transmission in URLs.
+
+- **Base32 Encoding & Decoding**
+   - **Standard Variant**: Encode and decode data using the standard Base32 alphabet.
+   - **Crockford Variant**: Utilize the Crockford Base32 alphabet for encoding and decoding, which minimizes confusion between similar-looking characters.
+
+- **Base16 (Hex) Encoding & Decoding**
+   - **Hexadecimal Strings**: Seamlessly convert data to and from hexadecimal representations.
+
 
 ## Installation
 
